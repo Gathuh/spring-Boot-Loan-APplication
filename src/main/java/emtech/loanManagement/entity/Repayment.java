@@ -1,39 +1,32 @@
 package emtech.loanManagement.entity;
 
-import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
-import lombok.Data;
 
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "repayments")
-@Data
 public class Repayment {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne
-    @JoinColumn(name = "loan_id", nullable = false)
-    @JsonBackReference
-    private Loan loan;
-
-    @Column(nullable = false)
     private Double amount;
 
-    @Column(nullable = false)
-    private LocalDateTime paymentDate;
+    @ManyToOne
+    @JoinColumn(name = "loan_id")
+    private Loan loan;
 
-    public Repayment() {
-        this.paymentDate = LocalDateTime.now();
-    }
+    @Column(name = "payment_date") // Match the database column name
+    private LocalDateTime repaymentDate;
 
-    // Parameterized constructor for convenience
-    public Repayment(Double amount, Loan loan) {
-        this.amount = amount;
-        this.loan = loan;
-        this.paymentDate = LocalDateTime.now();
-    }
+    // Getters and setters
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
+    public Double getAmount() { return amount; }
+    public void setAmount(Double amount) { this.amount = amount; }
+    public Loan getLoan() { return loan; }
+    public void setLoan(Loan loan) { this.loan = loan; }
+    public LocalDateTime getRepaymentDate() { return repaymentDate; }
+    public void setRepaymentDate(LocalDateTime repaymentDate) { this.repaymentDate = repaymentDate; }
 }
