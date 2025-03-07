@@ -28,7 +28,9 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/**").permitAll() // Public auth endpoints
-                        .requestMatchers("/api/loans/**").authenticated() // Require auth for loan endpoints
+                        .requestMatchers("/api/loans/create", "/api/loans/my-loans").authenticated() // Authenticated users can create/view loans
+                        .requestMatchers("/api/loans/update-status/**").authenticated() // Authenticated users can update status (temporary, until roles are added)
+                        .requestMatchers("/api/repayments/**").authenticated() // Authenticated users can make/view repayments
                         .anyRequest().authenticated())
                 .addFilterBefore(jwtRequestFilter, UsernamePasswordAuthenticationFilter.class);
 
