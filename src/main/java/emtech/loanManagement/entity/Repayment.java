@@ -1,5 +1,6 @@
 package emtech.loanManagement.entity;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import lombok.Data;
 
@@ -16,6 +17,7 @@ public class Repayment {
 
     @ManyToOne
     @JoinColumn(name = "loan_id", nullable = false)
+    @JsonBackReference
     private Loan loan;
 
     @Column(nullable = false)
@@ -24,8 +26,14 @@ public class Repayment {
     @Column(nullable = false)
     private LocalDateTime paymentDate;
 
-    // Default constructor
     public Repayment() {
+        this.paymentDate = LocalDateTime.now();
+    }
+
+    // Parameterized constructor for convenience
+    public Repayment(Double amount, Loan loan) {
+        this.amount = amount;
+        this.loan = loan;
         this.paymentDate = LocalDateTime.now();
     }
 }

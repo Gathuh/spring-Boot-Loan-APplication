@@ -1,5 +1,6 @@
 package emtech.loanManagement.entity;
 
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.Data;
 
@@ -32,11 +33,21 @@ public class Loan {
     private User user;
 
     @OneToMany(mappedBy = "loan", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonManagedReference
     private List<Repayment> repayments = new ArrayList<>(); // New relationship to repayments
 
     // Default constructor
     public Loan() {
         this.status = "PENDING";
         this.remainingBalance = 0.0; // Will be set to the loan amount upon creation
+    }
+
+    // Parameterized constructor (optional, for convenience)
+    public Loan(Double amount, Double interestRate, User user) {
+        this.amount = amount;
+        this.interestRate = interestRate;
+        this.status = "PENDING";
+        this.remainingBalance = amount; // Initialize remainingBalance to amount
+        this.user = user;
     }
 }
