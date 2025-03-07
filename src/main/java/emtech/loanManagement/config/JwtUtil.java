@@ -3,13 +3,14 @@ package emtech.loanManagement.config;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
+import io.jsonwebtoken.security.Keys;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 
-import java.security.SecureRandom;
-import java.util.Base64;
+import javax.crypto.SecretKey;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
@@ -19,20 +20,30 @@ public class JwtUtil {
 
     private static final Logger logger = LoggerFactory.getLogger(JwtUtil.class);
 
-    private final String secretKey;
-    private final Long expiration = 86400000L; // 24 hours in milliseconds
+    // Inject secret key from application.properties (must be at least 32 bytes)
+    @Value("${jwt.secret}")
+    private String secretKeyString;
 
+    // Use a secure key derived from the string (or fallback to generated key if invalid)
+    private final SecretKey secretKey;
+
+    @Value("${jwt.expiration}")
+    private Long expiration;
+
+    // Initialize with a secure key
     public JwtUtil() {
-        // Generate a secure 256-bit (32-byte) key
-        byte[] keyBytes = new byte[32]; // 32 bytes = 256 bits
-        SecureRandom secureRandom = new SecureRandom();
-        secureRandom.nextBytes(keyBytes);
-        this.secretKey = Base64.getEncoder().encodeToString(keyBytes);
-        logger.info("Generated secret key: {}", secretKey);
+        // Validate and convert the injected secretKeyString to a SecretKey
+        if (secretKeyString != null && secretKeyString.getBytes().length >= 32) {
+            this.secretKey = Keys.hmacShaKeyFor(secretKeyString.getBytes());
+            logger.info("Using provided secret key of length: {}", secretKeyString.getBytes().length);
+        } else {
+            this.secretKey = Keys.secretKeyFor(SignatureAlgorithm.HS256); // Generate a 256-bit key
+            logger.warn("Provided secret key is invalid or too short (< 32 bytes). Generated a secure 256-bit key instead.");
+        }
     }
 
     public String generateToken(UserDetails userDetails) {
-        logger.info("Expiration: {}", expiration);
+        logger.info("Generating token for user: {}", userDetails.getUsername());
         Map<String, Object> claims = new HashMap<>();
         return createToken(claims, userDetails.getUsername());
     }
@@ -43,7 +54,7 @@ public class JwtUtil {
                 .setSubject(subject)
                 .setIssuedAt(new Date(System.currentTimeMillis()))
                 .setExpiration(new Date(System.currentTimeMillis() + expiration))
-                .signWith(SignatureAlgorithm.HS256, secretKey)
+                .signWith(secretKey, SignatureAlgorithm.HS256) // Use the secure key
                 .compact();
     }
 
@@ -61,9 +72,12 @@ public class JwtUtil {
         return extractAllClaims(token).getSubject();
     }
 
-    @SuppressWarnings("deprecation")
     private Claims extractAllClaims(String token) {
-        return Jwts.parser().setSigningKey(secretKey).parseClaimsJws(token).getBody();
+        return Jwts.parserBuilder()
+                .setSigningKey(secretKey) // Use the secure key
+                .build()
+                .parseClaimsJws(token)
+                .getBody();
     }
 
     private Boolean isTokenExpired(String token) {
